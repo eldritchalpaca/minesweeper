@@ -1,6 +1,9 @@
 #include <iostream>
 #include <ncurses.h>
 
+#define io_x(x) (x * 4 + 2)
+#define io_y(y) (y * 2 + 1)
+
 void io_init_terminal(void)
 {
   initscr();
@@ -24,14 +27,14 @@ void io_reset_terminal(void)
 }
 
 void io_draw_grid(void) {
-    attron(COLOR_PAIR(COLOR_YELLOW));
+    //attron(COLOR_PAIR(COLOR_YELLOW));
     //left side
     mvaddch(1, 0, ACS_VLINE);
     mvaddch(0, 0, ACS_ULCORNER);
     mvaddch(0, 1, ACS_HLINE);
     mvaddch(0, 2, ACS_HLINE);
     mvaddch(0, 3, ACS_HLINE);
-    mvaddch(1, 2, 'a');
+    //mvaddch(1, 2, 'a');
 
     for (int y = 2; y < 24; y += 2) {
       mvaddch(y + 1, 0, ACS_VLINE);
@@ -39,7 +42,7 @@ void io_draw_grid(void) {
       mvaddch(y    , 1, ACS_HLINE);
       mvaddch(y    , 2, ACS_HLINE);
       mvaddch(y    , 3, ACS_HLINE);
-      mvaddch(y + 1, 2, 'a');
+      //mvaddch(y + 1, 2, 'a');
     }
 
     mvaddch(24, 0, ACS_LLCORNER);
@@ -55,10 +58,10 @@ void io_draw_grid(void) {
       mvaddch(y    , 80, ACS_RTEE);
     }
     mvaddch(24, 80, ACS_LRCORNER);
-    attron(COLOR_PAIR(COLOR_YELLOW));
+    //attroff(COLOR_PAIR(COLOR_YELLOW));
 
     
-    attron(COLOR_PAIR(COLOR_GREEN));
+    //attron(COLOR_PAIR(COLOR_GREEN));
     //top
     for (int x = 4; x < 80; x += 4) {
       mvaddch(1, x    , ACS_VLINE);
@@ -66,7 +69,7 @@ void io_draw_grid(void) {
       mvaddch(0, x + 1, ACS_HLINE);
       mvaddch(0, x + 2, ACS_HLINE);
       mvaddch(0, x + 3, ACS_HLINE);
-      mvaddch(1, x + 2, 'a');
+      //mvaddch(1, x + 2, 'a');
     }
 
     //bottom
@@ -76,7 +79,7 @@ void io_draw_grid(void) {
       mvaddch(24, x + 2, ACS_HLINE);
       mvaddch(24, x + 3, ACS_HLINE);
     }
-    attroff(COLOR_PAIR(COLOR_GREEN));
+    //attroff(COLOR_PAIR(COLOR_GREEN));
 
 
     //inner
@@ -87,24 +90,38 @@ void io_draw_grid(void) {
         mvaddch(y    , x + 1, ACS_HLINE);
         mvaddch(y    , x + 2, ACS_HLINE);
         mvaddch(y    , x + 3, ACS_HLINE);
-        mvaddch(y + 1, x + 2, 'a');
+        //mvaddch(y + 1, x + 2, 'a');
       }
     }
   
 }
 
+void io_fill_grid() {
+  for (int y = 0; y < 12; ++y) {
+    for (int x = 0; x < 20; ++x) {
+      mvaddch(io_y(y), io_x(x), 'a');
+    }
+  }
+}
+
 int main(int argc, char const *argv[])
 {
+    char in;
+
     io_init_terminal();
-    attron(COLOR_PAIR(COLOR_MAGENTA));
+
     mvprintw(0, 0, "0");
-    attroff(COLOR_PAIR(COLOR_MAGENTA));
     mvprintw(24, 0, "0");
     mvprintw(24, 80, "0");
     mvprintw(0, 80, "0");
-    getch();
+
     io_draw_grid();
-    getch();
+    io_fill_grid();
+    
+    do {
+      in = getch();
+    } while (in != 'Q');
+
     io_reset_terminal();
     return 0;
 }
