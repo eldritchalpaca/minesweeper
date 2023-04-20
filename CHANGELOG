@@ -3,3 +3,5 @@
             05:29PM     Can now put things in the grid without redrawing the grid!!
 
 04/20/23    02:52PM     Boards can be generated with varying numbers of bombs and be printed into the grid.
+
+            03:51PM     Board generation complete! non-bomb tiles know how many bombs they border, grid is printed nice and in color

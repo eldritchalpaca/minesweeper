@@ -5,6 +5,19 @@
 #define io_x(x) (x * 4 + 2)
 #define io_y(y) (y * 2 + 1)
 
+int colors[9] = 
+{
+  COLOR_BLACK,  //bomb
+  COLOR_BLUE,   //1
+  COLOR_GREEN,  //2
+  COLOR_RED,    //3
+  COLOR_MAGENTA,//4
+  COLOR_CYAN,   //5
+  COLOR_YELLOW, //6
+  COLOR_YELLOW, //7
+  COLOR_RED     //8
+};
+
 void io_init_terminal(void)
 {
   initscr();
@@ -98,9 +111,20 @@ void io_draw_grid(void) {
 }
 
 void io_fill_grid(game_board board) {
+  int color;
+
   for (int y = 0; y < BOARD_Y; ++y) {
     for (int x = 0; x < BOARD_X; ++x) {
-      mvaddch(io_y(y), io_x(x), board.board[y][x]->check_if_bomb() ? 'X' : ' ');
+      if (board.board[y][x]->get_value() != 0) {
+        if (board.board[y][x]->check_if_bomb()) {
+          color = colors[0];
+        } else {
+          color = colors[board.board[y][x]->get_value()];
+        }
+        attron(COLOR_PAIR(color));
+        mvaddch(io_y(y), io_x(x), board.board[y][x]->check_if_bomb() ? 'X' : board.board[y][x]->get_value() + '0');
+        attroff(COLOR_PAIR(color));
+      }
     }
   }
 }
@@ -113,7 +137,6 @@ int main(int argc, char const *argv[])
 
     game_board *board;
     board = new game_board(50);
-
 
     io_init_terminal();
 
