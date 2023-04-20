@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ncurses.h>
+#include "tile.h"
 
 #define io_x(x) (x * 4 + 2)
 #define io_y(y) (y * 2 + 1)
@@ -96,17 +97,23 @@ void io_draw_grid(void) {
   
 }
 
-void io_fill_grid() {
-  for (int y = 0; y < 12; ++y) {
-    for (int x = 0; x < 20; ++x) {
-      mvaddch(io_y(y), io_x(x), 'a');
+void io_fill_grid(game_board board) {
+  for (int y = 0; y < BOARD_Y; ++y) {
+    for (int x = 0; x < BOARD_X; ++x) {
+      mvaddch(io_y(y), io_x(x), board.board[y][x]->check_if_bomb() ? 'X' : ' ');
     }
   }
 }
 
+class game_board;
+
 int main(int argc, char const *argv[])
 {
     char in;
+
+    game_board *board;
+    board = new game_board(50);
+
 
     io_init_terminal();
 
@@ -115,8 +122,10 @@ int main(int argc, char const *argv[])
     mvprintw(24, 80, "0");
     mvprintw(0, 80, "0");
 
+
+    
     io_draw_grid();
-    io_fill_grid();
+    io_fill_grid(*board);
     
     do {
       in = getch();

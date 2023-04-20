@@ -11,7 +11,7 @@ CXXFLAGS = -Wall -Werror -ggdb -funroll-loops -DTERM=$(TERM)
 LDFLAGS = -lncurses
 
 BIN = minesweeper
-OBJS = minesweeper.o
+OBJS = minesweeper.o tile.o
 
 all: $(BIN) etags
 
