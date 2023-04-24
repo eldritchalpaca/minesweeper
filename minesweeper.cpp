@@ -1,9 +1,12 @@
 #include <iostream>
 #include <ncurses.h>
 #include "tile.h"
+#include <cmath>
 
 #define io_x(x) (x * 4 + 2)
 #define io_y(y) (y * 2 + 1)
+#define x(io_x) ((int)round(((double)(io_x - 2) / 4.0)))
+#define y(io_y) ((int)round(((double)(io_y - 1) / 2.0)))
 
 int colors[9] = 
 {
@@ -25,6 +28,8 @@ void io_init_terminal(void)
   noecho();
   curs_set(0);
   keypad(stdscr, TRUE);
+  mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+  //mousemask(REPORT_MOUSE_POSITION, NULL);
   start_color();
   init_pair(COLOR_RED, COLOR_RED, COLOR_BLACK);
   init_pair(COLOR_GREEN, COLOR_GREEN, COLOR_BLACK);
@@ -110,21 +115,24 @@ void io_draw_grid(void) {
   
 }
 
-void io_fill_grid(game_board board) {
+void io_fill_tile(game_board *board, int x, int y) {
   int color;
+ // if (board->board[y][x]->get_value() != 0) {
+    if (board->board[y][x]->check_if_bomb()) {
+      color = colors[0];
+    } else {
+      color = colors[board->board[y][x]->get_value()];
+    }
+    attron(COLOR_PAIR(color));
+    mvaddch(io_y(y), io_x(x), board->board[y][x]->check_if_bomb() ? 'X' : board->board[y][x]->get_value() + '0');
+    attroff(COLOR_PAIR(color));
+  //}
+}
 
+void io_fill_grid(game_board *board) {
   for (int y = 0; y < BOARD_Y; ++y) {
     for (int x = 0; x < BOARD_X; ++x) {
-      if (board.board[y][x]->get_value() != 0) {
-        if (board.board[y][x]->check_if_bomb()) {
-          color = colors[0];
-        } else {
-          color = colors[board.board[y][x]->get_value()];
-        }
-        attron(COLOR_PAIR(color));
-        mvaddch(io_y(y), io_x(x), board.board[y][x]->check_if_bomb() ? 'X' : board.board[y][x]->get_value() + '0');
-        attroff(COLOR_PAIR(color));
-      }
+      io_fill_tile(board, x, y);
     }
   }
 }
@@ -133,7 +141,8 @@ class game_board;
 
 int main(int argc, char const *argv[])
 {
-    char in;
+    int in;
+    MEVENT event;
 
     game_board *board;
     board = new game_board(50);
@@ -148,11 +157,27 @@ int main(int argc, char const *argv[])
 
     
     io_draw_grid();
-    io_fill_grid(*board);
     
     do {
       in = getch();
+      if (getmouse(&event) == OK ) {
+        if ((event.bstate & BUTTON1_CLICKED) && in_bounds(x(event.x), y(event.y))) {
+          io_fill_tile(board, x(event.x), y(event.y));
+          move(26, 0);
+          clrtoeol();
+          mvprintw(26, 0, "%d, %d", x(event.x), y(event.y));
+        }
+        else if (event.bstate & BUTTON2_CLICKED) {
+          mvaddch(io_y(y(event.y)), io_x(x(event.x)), '%');
+        }
+        else if (event.bstate & BUTTON3_CLICKED) {
+          mvaddch(io_y(y(event.y)), io_x(x(event.x)), '#');
+        }
+      }
     } while (in != 'Q');
+
+    io_fill_grid(board);
+    getch();
 
     io_reset_terminal();
     return 0;
