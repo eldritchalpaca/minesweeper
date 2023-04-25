@@ -9,7 +9,9 @@
 04/24/23    03:20PM     Implemented mouse input for left, right, and middle click. When a tile is left clicked, its value is revealed.
                         Currently the game does not end when a bomb is hit and right and middle click don't do anything useful.
 
-04/25/23    11:22PM     When a zero is revealed, all of the tiles around it are also revealed.
+04/25/23    11:22AM     When a zero is revealed, all of the tiles around it are also revealed, game ends when bomb is clicked
+
+            03:54PM     middle clicking, flagging, win conditions
 
 
 refine flagging

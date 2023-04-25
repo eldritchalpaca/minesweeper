@@ -158,6 +158,7 @@ void io_grid_init() {
 bool io_on_tile_click(game_board *board, int x, int y) {
   io_fill_tile(board, x, y);
   board->board[y][x]->is_clicked = true;
+  board->board[y][x]->is_flagged = false;
   if (board->board[y][x]->get_value() == 0) {
     std::vector<tile *> v = board->get_tile_neighbors(x, y);
     for (tile *t : v) {
@@ -172,6 +173,35 @@ bool io_on_tile_click(game_board *board, int x, int y) {
   return false;
 }
 
+void io_on_tile_flag(game_board *b, tile *t) {
+  if (!t->is_clicked) {
+    t->is_flagged ? b->decrement_flags() : b->increment_flags();
+    t->is_flagged = !t->is_flagged;
+    attron(COLOR_PAIR(t->is_flagged ? COLOR_RED : COLOR_CYAN));
+    mvaddch(io_y(t->get_y()), io_x(t->get_x()), t->is_flagged ? '<' : '.');
+    attroff(COLOR_PAIR(t->is_flagged ? COLOR_RED : COLOR_CYAN));
+  }
+}
+
+bool io_on_middle_click(game_board *b, tile *t) {
+  bool defeated = false;
+  std::vector<tile *> v;
+
+  if (!t->is_clicked && t->get_value() == b->check_tile_neighbors_flags(t->get_x(), t->get_y())) {
+    v = b->get_tile_neighbors(t->get_x(), t->get_y());
+    
+    for (tile *tl : v) {
+      if (!tl->is_flagged) {
+        defeated = io_on_tile_click(b, tl->get_x(), tl->get_y());
+        if (defeated) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 int main(int argc, char const *argv[])
 {
     int in;
@@ -179,7 +209,7 @@ int main(int argc, char const *argv[])
     bool defeated = false;
 
     game_board *board;
-    board = new game_board(20);
+    board = new game_board(1);
 
     io_init_terminal();
     
@@ -187,23 +217,25 @@ int main(int argc, char const *argv[])
     
     do {
       in = getch();
-      if (getmouse(&event) == OK ) {
-        if ((event.bstate & BUTTON1_CLICKED) && in_bounds(x(event.x), y(event.y))) {
+      if (getmouse(&event) == OK && in_bounds(x(event.x), y(event.y))) {
+        if (event.bstate & BUTTON1_CLICKED) {
           defeated = io_on_tile_click(board, x(event.x), y(event.y));
-          move(26, 0);
+/*           move(26, 0);
           clrtoeol();
-          mvprintw(26, 0, "%d, %d", x(event.x), y(event.y));
+          mvprintw(26, 0, "%d, %d", x(event.x), y(event.y)); */
         }
         else if (event.bstate & BUTTON2_CLICKED) {
-          mvaddch(io_y(y(event.y)), io_x(x(event.x)), '%');
+          defeated = io_on_middle_click(board, board->board[y(event.y)][x(event.x)]);
+          //mvaddch(io_y(y(event.y)), io_x(x(event.x)), '%');
         }
         else if (event.bstate & BUTTON3_CLICKED) {
-          mvaddch(io_y(y(event.y)), io_x(x(event.x)), '#');
+          io_on_tile_flag(board, board->board[y(event.y)][x(event.x)]);
         }
       }
-    } while (!defeated && in != 'Q');
+    } while (!defeated && in != 'Q' && !board->have_won());
 
     io_show_grid(board);
+    mvprintw(26, 0, "%s", board->have_won() ? (char *)"yay you won" : (char *)"you lost :(");
     getch();
 
     io_reset_terminal();

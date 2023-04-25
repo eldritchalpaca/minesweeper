@@ -4,7 +4,7 @@
 #include <cstdio>
 
 
-int game_board::check_tile_neighbors(int x, int y) {
+int game_board::check_tile_neighbors_bombs(int x, int y) {
     int num_bombs = 0;
     if (in_bounds(x - 1, y - 1) && board[y - 1][x - 1] && board[y - 1][x - 1]->check_if_bomb()) {
         num_bombs++;
@@ -31,6 +31,35 @@ int game_board::check_tile_neighbors(int x, int y) {
         num_bombs++;
     }
     return num_bombs;
+}
+
+int game_board::check_tile_neighbors_flags(int x, int y) {
+    int num_flags = 0;
+    if (in_bounds(x - 1, y - 1) && board[y - 1][x - 1] && board[y - 1][x - 1]->is_flagged) {
+        num_flags++;
+    }
+    if (in_bounds(x, y - 1)     && board[y - 1][x    ] && board[y - 1][x    ]->is_flagged) {
+        num_flags++;
+    }
+    if (in_bounds(x + 1, y - 1) && board[y - 1][x + 1] && board[y - 1][x + 1]->is_flagged) {
+        num_flags++;
+    }
+    if (in_bounds(x - 1, y)     && board[y    ][x - 1] && board[y    ][x - 1]->is_flagged) {
+        num_flags++;
+    }
+    if (in_bounds(x + 1, y)     && board[y    ][x + 1] && board[y    ][x + 1]->is_flagged) {
+        num_flags++;
+    }
+    if (in_bounds(x - 1, y + 1) && board[y + 1][x - 1] && board[y + 1][x - 1]->is_flagged) {
+        num_flags++;
+    }
+    if (in_bounds(x, y + 1)     && board[y + 1][x    ] && board[y + 1][x    ]->is_flagged) {
+        num_flags++;
+    }
+    if (in_bounds(x + 1, y + 1) && board[y + 1][x + 1] && board[y + 1][x + 1]->is_flagged) {
+        num_flags++;
+    }
+    return num_flags;
 }
 
 std::vector<tile *> game_board::get_tile_neighbors(int x, int y) {
@@ -62,7 +91,20 @@ std::vector<tile *> game_board::get_tile_neighbors(int x, int y) {
     return v;
 }
 
-game_board::game_board(int num_bombs) {
+bool game_board::have_won() {
+    if (num_bombs != num_flags) {
+        return false;
+    }
+
+    for (tile *t : bombs) {
+        if (!t->is_flagged) {
+            return false;
+        }
+    }
+    return true;
+}
+
+game_board::game_board(int num_bombs) : num_bombs(num_bombs), num_flags(0) {
     int x, y;
     int n = 0;
 
@@ -80,6 +122,7 @@ game_board::game_board(int num_bombs) {
         y = rand() % BOARD_Y;
         if (!board[y][x]) {
             board[y][x] = new tile(true, -1, x, y);
+            bombs.push_back(board[y][x]);
             //printf("%d: (%d, %d)\n", n, x, y);
             n++;
         }
@@ -88,7 +131,7 @@ game_board::game_board(int num_bombs) {
     for (y = 0; y < BOARD_Y; ++y) {
         for (x = 0; x < BOARD_X; ++x) {
             if (!board[y][x]) {
-                board[y][x] = new tile(false, check_tile_neighbors(x, y), x, y);
+                board[y][x] = new tile(false, check_tile_neighbors_bombs(x, y), x, y);
             }
         }
     }
