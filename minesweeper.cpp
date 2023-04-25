@@ -1,7 +1,9 @@
 #include <iostream>
 #include <ncurses.h>
-#include "tile.h"
+#include <vector>
 #include <cmath>
+
+#include "tile.h"
 
 #define io_x(x) (x * 4 + 2)
 #define io_y(y) (y * 2 + 1)
@@ -117,7 +119,7 @@ void io_draw_grid(void) {
 
 void io_fill_tile(game_board *board, int x, int y) {
   int color;
- // if (board->board[y][x]->get_value() != 0) {
+  if (board->board[y][x]->get_value() != 0) {
     if (board->board[y][x]->check_if_bomb()) {
       color = colors[0];
     } else {
@@ -126,10 +128,14 @@ void io_fill_tile(game_board *board, int x, int y) {
     attron(COLOR_PAIR(color));
     mvaddch(io_y(y), io_x(x), board->board[y][x]->check_if_bomb() ? 'X' : board->board[y][x]->get_value() + '0');
     attroff(COLOR_PAIR(color));
-  //}
+    refresh();
+  }
+  else {
+    mvaddch(io_y(y), io_x(x), ' ');
+  }
 }
 
-void io_fill_grid(game_board *board) {
+void io_show_grid(game_board *board) {
   for (int y = 0; y < BOARD_Y; ++y) {
     for (int x = 0; x < BOARD_X; ++x) {
       io_fill_tile(board, x, y);
@@ -137,32 +143,53 @@ void io_fill_grid(game_board *board) {
   }
 }
 
-class game_board;
+void io_grid_init() {
+  io_draw_grid();
+  for (int y = 0; y < BOARD_Y; ++y) {
+    for (int x = 0; x < BOARD_X; ++x) {
+      attron(COLOR_PAIR(COLOR_CYAN));
+      mvaddch(io_y(y), io_x(x), '.');
+      attroff(COLOR_PAIR(COLOR_CYAN));
+      refresh();
+    }
+  }
+}
+
+bool io_on_tile_click(game_board *board, int x, int y) {
+  io_fill_tile(board, x, y);
+  board->board[y][x]->is_clicked = true;
+  if (board->board[y][x]->get_value() == 0) {
+    std::vector<tile *> v = board->get_tile_neighbors(x, y);
+    for (tile *t : v) {
+      if (!t->is_clicked) {
+        io_on_tile_click(board, t->get_x(), t->get_y());
+      }
+    }
+  }
+  if (board->board[y][x]->check_if_bomb()) {
+    return true;
+  }
+  return false;
+}
 
 int main(int argc, char const *argv[])
 {
     int in;
     MEVENT event;
+    bool defeated = false;
 
     game_board *board;
-    board = new game_board(50);
+    board = new game_board(20);
 
     io_init_terminal();
-
-    mvprintw(0, 0, "0");
-    mvprintw(24, 0, "0");
-    mvprintw(24, 80, "0");
-    mvprintw(0, 80, "0");
-
-
     
-    io_draw_grid();
+    io_grid_init();
     
     do {
       in = getch();
       if (getmouse(&event) == OK ) {
         if ((event.bstate & BUTTON1_CLICKED) && in_bounds(x(event.x), y(event.y))) {
-          io_fill_tile(board, x(event.x), y(event.y));
+          defeated = io_on_tile_click(board, x(event.x), y(event.y));
           move(26, 0);
           clrtoeol();
           mvprintw(26, 0, "%d, %d", x(event.x), y(event.y));
@@ -174,9 +201,9 @@ int main(int argc, char const *argv[])
           mvaddch(io_y(y(event.y)), io_x(x(event.x)), '#');
         }
       }
-    } while (in != 'Q');
+    } while (!defeated && in != 'Q');
 
-    io_fill_grid(board);
+    io_show_grid(board);
     getch();
 
     io_reset_terminal();
