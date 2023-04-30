@@ -144,6 +144,7 @@ void io_show_grid(game_board *board) {
 }
 
 void io_grid_init() {
+  clear();
   io_draw_grid();
   for (int y = 0; y < BOARD_Y; ++y) {
     for (int x = 0; x < BOARD_X; ++x) {
@@ -187,7 +188,7 @@ bool io_on_middle_click(game_board *b, tile *t) {
   bool defeated = false;
   std::vector<tile *> v;
 
-  if (!t->is_clicked && t->get_value() == b->check_tile_neighbors_flags(t->get_x(), t->get_y())) {
+  if (t->is_clicked && t->get_value() == b->check_tile_neighbors_flags(t->get_x(), t->get_y())) {
     v = b->get_tile_neighbors(t->get_x(), t->get_y());
     
     for (tile *tl : v) {
@@ -202,37 +203,64 @@ bool io_on_middle_click(game_board *b, tile *t) {
   return false;
 }
 
-int main(int argc, char const *argv[])
-{
+void game_loop(game_board *board) {
     int in;
     MEVENT event;
     bool defeated = false;
+    do {
+    in = getch();
+    if (getmouse(&event) == OK && in_bounds(x(event.x), y(event.y))) {
+      if (event.bstate & BUTTON1_CLICKED) {
+        defeated = io_on_tile_click(board, x(event.x), y(event.y));
+/*           move(26, 0);
+        clrtoeol();
+        mvprintw(26, 0, "%d, %d", x(event.x), y(event.y)); */
+      }
+      else if (event.bstate & BUTTON2_CLICKED) {
+        defeated = io_on_middle_click(board, board->board[y(event.y)][x(event.x)]);
+        //mvaddch(io_y(y(event.y)), io_x(x(event.x)), '%');
+      }
+      else if (event.bstate & BUTTON3_CLICKED) {
+        io_on_tile_flag(board, board->board[y(event.y)][x(event.x)]);
+      }
+    }
+  } while (!defeated && in != 'Q' && !board->have_won());
+}
 
-    game_board *board;
-    board = new game_board(1);
+void title_screen() {
+    int in;
+    MEVENT event;
+    mvprintw(0, 0, "0");
+    mvprintw(23, 0, "0");
+    mvprintw(0, 79, "0");
+    mvprintw(23, 79, "0");
 
-    io_init_terminal();
-    
-    io_grid_init();
-    
+    mvprintw(3, 6, "  __  __  ___  _  _  ___  ___ __      __ ___  ___  ___  ___  ___ ");
+    mvprintw(4, 6, " |  \\/  ||_ _|| \\| || __|/ __|\\ \\    / /| __|| __|| _ \\| __|| _ \\");
+    mvprintw(5, 6, " | |\\/| | | | | .` || _| \\__ \\ \\ \\/\\/ / | _| | _| |  _/| _| |   /");
+    mvprintw(6, 6, " |_|  |_||___||_|\\_||___||___/  \\_/\\_/  |___||___||_|  |___||_|_\\");
+
+    mvprintw(15, 34, "by alix noble");
+    mvprintw(17, 27, "--click anywhere to start--");
+
     do {
       in = getch();
-      if (getmouse(&event) == OK && in_bounds(x(event.x), y(event.y))) {
-        if (event.bstate & BUTTON1_CLICKED) {
-          defeated = io_on_tile_click(board, x(event.x), y(event.y));
-/*           move(26, 0);
-          clrtoeol();
-          mvprintw(26, 0, "%d, %d", x(event.x), y(event.y)); */
-        }
-        else if (event.bstate & BUTTON2_CLICKED) {
-          defeated = io_on_middle_click(board, board->board[y(event.y)][x(event.x)]);
-          //mvaddch(io_y(y(event.y)), io_x(x(event.x)), '%');
-        }
-        else if (event.bstate & BUTTON3_CLICKED) {
-          io_on_tile_flag(board, board->board[y(event.y)][x(event.x)]);
-        }
-      }
-    } while (!defeated && in != 'Q' && !board->have_won());
+    } while (getmouse(&event) != OK && in != 'Q');
+}
+
+int main(int argc, char const *argv[])
+{
+
+    game_board *board;
+
+    io_init_terminal();
+
+    title_screen();
+
+    board = new game_board(20);
+    io_grid_init();
+    
+    game_loop(board);
 
     io_show_grid(board);
     mvprintw(26, 0, "%s", board->have_won() ? (char *)"yay you won" : (char *)"you lost :(");
