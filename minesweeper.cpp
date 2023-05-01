@@ -194,6 +194,7 @@ bool io_on_middle_click(game_board *b, tile *t) {
     for (tile *tl : v) {
       if (!tl->is_flagged) {
         defeated = io_on_tile_click(b, tl->get_x(), tl->get_y());
+        tl->is_clicked = true;
         if (defeated) {
           return true;
         }
@@ -203,28 +204,38 @@ bool io_on_middle_click(game_board *b, tile *t) {
   return false;
 }
 
-void game_loop(game_board *board) {
+void game_loop() {
     int in;
     MEVENT event;
+    game_board *board;
     bool defeated = false;
+    bool generated = false;
+
     do {
     in = getch();
     if (getmouse(&event) == OK && in_bounds(x(event.x), y(event.y))) {
+      if (!generated) {
+        board = new game_board(35, x(event.x), y(event.y));
+        generated = true;
+      }
+
       if (event.bstate & BUTTON1_CLICKED) {
         defeated = io_on_tile_click(board, x(event.x), y(event.y));
-/*           move(26, 0);
-        clrtoeol();
-        mvprintw(26, 0, "%d, %d", x(event.x), y(event.y)); */
       }
       else if (event.bstate & BUTTON2_CLICKED) {
         defeated = io_on_middle_click(board, board->board[y(event.y)][x(event.x)]);
-        //mvaddch(io_y(y(event.y)), io_x(x(event.x)), '%');
       }
       else if (event.bstate & BUTTON3_CLICKED) {
         io_on_tile_flag(board, board->board[y(event.y)][x(event.x)]);
       }
     }
+    
+    
   } while (!defeated && in != 'Q' && !board->have_won());
+
+  io_show_grid(board);
+    mvprintw(26, 0, "%s", board->have_won() ? (char *)"yay you won" : (char *)"you lost :(");
+    getch();
 }
 
 void title_screen() {
@@ -251,20 +262,18 @@ void title_screen() {
 int main(int argc, char const *argv[])
 {
 
-    game_board *board;
+   // game_board *board = NULL;
 
     io_init_terminal();
 
     title_screen();
 
-    board = new game_board(20);
+    //board = new game_board(20);
     io_grid_init();
     
-    game_loop(board);
+    game_loop();
 
-    io_show_grid(board);
-    mvprintw(26, 0, "%s", board->have_won() ? (char *)"yay you won" : (char *)"you lost :(");
-    getch();
+    
 
     io_reset_terminal();
     return 0;

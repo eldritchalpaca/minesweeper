@@ -44,7 +44,7 @@ public:
 
     bool have_won();
     
-    game_board(int num_bombs);
+    game_board(int num_bombs, int click_x, int click_y);
     ~game_board();
 };
 

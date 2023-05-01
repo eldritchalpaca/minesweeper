@@ -2,7 +2,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
-
+#include <array>
+#include <algorithm>
+#include <ncurses.h>
 
 int game_board::check_tile_neighbors_bombs(int x, int y) {
     int num_bombs = 0;
@@ -104,9 +106,38 @@ bool game_board::have_won() {
     return true;
 }
 
-game_board::game_board(int num_bombs) : num_bombs(num_bombs), num_flags(0) {
+game_board::game_board(int num_bombs, int click_x, int click_y) : num_bombs(num_bombs), num_flags(0) {
     int x, y;
     int n = 0;
+    std::vector<std::array<int, 2>> reserved;
+
+    if (in_bounds(click_x, click_y)) {
+        reserved.push_back({click_y, click_x});
+    }
+    if (in_bounds(click_x - 1, click_y - 1)) {
+        reserved.push_back({click_y - 1, click_x - 1});
+    }
+    if (in_bounds(click_x, click_y - 1)) {
+        reserved.push_back({click_y - 1, click_x    });
+    }
+    if (in_bounds(click_x + 1, click_y - 1)) {
+        reserved.push_back({click_y - 1, click_x + 1});
+    }
+    if (in_bounds(click_x - 1, click_y)) {
+        reserved.push_back({click_y    , click_x - 1});
+    }
+    if (in_bounds(click_x + 1, click_y)) {
+        reserved.push_back({click_y    , click_x + 1});
+    }
+    if (in_bounds(click_x - 1, click_y + 1)) {
+        reserved.push_back({click_y + 1, click_x - 1});
+    }
+    if (in_bounds(click_x, click_y + 1)) {
+        reserved.push_back({click_y + 1, click_x    });
+    }
+    if (in_bounds(click_x + 1, click_y + 1)) {
+        reserved.push_back({click_y + 1, click_x + 1});
+    }
 
     for (y = 0; y < BOARD_Y; ++y) {
         for (x = 0; x < BOARD_X; ++x) {
@@ -120,10 +151,10 @@ game_board::game_board(int num_bombs) : num_bombs(num_bombs), num_flags(0) {
     while (n < num_bombs) {
         x = rand() % BOARD_X;
         y = rand() % BOARD_Y;
-        if (!board[y][x]) {
+        if (!board[y][x] && std::find(reserved.begin(), reserved.end(), std::array<int, 2> {y, x}) == reserved.end()) {
             board[y][x] = new tile(true, -1, x, y);
             bombs.push_back(board[y][x]);
-            //printf("%d: (%d, %d)\n", n, x, y);
+            //mvprintw(26, 0, "%d: (%d, %d)\n", n, x, y);
             n++;
         }
     }
