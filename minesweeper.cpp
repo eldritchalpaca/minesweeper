@@ -5,6 +5,10 @@
 
 #include "tile.h"
 
+#define EASY    20
+#define MEDIUM  30
+#define HARD    50
+
 #define io_x(x) (x * 4 + 2)
 #define io_y(y) (y * 2 + 1)
 #define x(io_x) ((int)round(((double)(io_x - 2) / 4.0)))
@@ -19,11 +23,11 @@ int colors[9] =
   COLOR_MAGENTA,//4
   COLOR_CYAN,   //5
   COLOR_YELLOW, //6
-  COLOR_YELLOW, //7
+  COLOR_WHITE,  //7
   COLOR_RED     //8
 };
 
-void io_init_terminal(void)
+void init_terminal(void)
 {
   initscr();
   raw();
@@ -42,12 +46,12 @@ void io_init_terminal(void)
   init_pair(COLOR_WHITE, COLOR_WHITE, COLOR_BLACK);
 }
 
-void io_reset_terminal(void)
+void reset_terminal(void)
 {
   endwin();
 }
 
-void io_draw_grid(void) {
+void draw_grid(void) {
     //attron(COLOR_PAIR(COLOR_YELLOW));
     //left side
     mvaddch(1, 0, ACS_VLINE);
@@ -117,7 +121,7 @@ void io_draw_grid(void) {
   
 }
 
-void io_fill_tile(game_board *board, int x, int y) {
+void fill_tile(game_board *board, int x, int y) {
   int color;
   if (board->board[y][x]->get_value() != 0) {
     if (board->board[y][x]->check_if_bomb()) {
@@ -126,7 +130,7 @@ void io_fill_tile(game_board *board, int x, int y) {
       color = colors[board->board[y][x]->get_value()];
     }
     attron(COLOR_PAIR(color));
-    mvaddch(io_y(y), io_x(x), board->board[y][x]->check_if_bomb() ? 'X' : board->board[y][x]->get_value() + '0');
+    mvaddch(io_y(y), io_x(x), board->board[y][x]->check_if_bomb() ? '<' : board->board[y][x]->get_value() + '0');
     attroff(COLOR_PAIR(color));
     refresh();
   }
@@ -135,17 +139,17 @@ void io_fill_tile(game_board *board, int x, int y) {
   }
 }
 
-void io_show_grid(game_board *board) {
+void show_grid(game_board *board) {
   for (int y = 0; y < BOARD_Y; ++y) {
     for (int x = 0; x < BOARD_X; ++x) {
-      io_fill_tile(board, x, y);
+      fill_tile(board, x, y);
     }
   }
 }
 
-void io_grid_init() {
+void grid_init() {
   clear();
-  io_draw_grid();
+  draw_grid();
   for (int y = 0; y < BOARD_Y; ++y) {
     for (int x = 0; x < BOARD_X; ++x) {
       attron(COLOR_PAIR(COLOR_CYAN));
@@ -156,15 +160,15 @@ void io_grid_init() {
   }
 }
 
-bool io_on_tile_click(game_board *board, int x, int y) {
-  io_fill_tile(board, x, y);
+bool on_tile_click(game_board *board, int x, int y) {
+  fill_tile(board, x, y);
   board->board[y][x]->is_clicked = true;
   board->board[y][x]->is_flagged = false;
   if (board->board[y][x]->get_value() == 0) {
     std::vector<tile *> v = board->get_tile_neighbors(x, y);
     for (tile *t : v) {
       if (!t->is_clicked) {
-        io_on_tile_click(board, t->get_x(), t->get_y());
+        on_tile_click(board, t->get_x(), t->get_y());
       }
     }
   }
@@ -174,17 +178,17 @@ bool io_on_tile_click(game_board *board, int x, int y) {
   return false;
 }
 
-void io_on_tile_flag(game_board *b, tile *t) {
+void on_tile_flag(game_board *b, tile *t) {
   if (!t->is_clicked) {
     t->is_flagged ? b->decrement_flags() : b->increment_flags();
     t->is_flagged = !t->is_flagged;
-    attron(COLOR_PAIR(t->is_flagged ? COLOR_RED : COLOR_CYAN));
+    attron(COLOR_PAIR(t->is_flagged ? COLOR_WHITE : COLOR_CYAN));
     mvaddch(io_y(t->get_y()), io_x(t->get_x()), t->is_flagged ? '<' : '.');
-    attroff(COLOR_PAIR(t->is_flagged ? COLOR_RED : COLOR_CYAN));
+    attroff(COLOR_PAIR(t->is_flagged ? COLOR_WHITE : COLOR_CYAN));
   }
 }
 
-bool io_on_middle_click(game_board *b, tile *t) {
+bool on_middle_click(game_board *b, tile *t) {
   bool defeated = false;
   std::vector<tile *> v;
 
@@ -193,7 +197,7 @@ bool io_on_middle_click(game_board *b, tile *t) {
     
     for (tile *tl : v) {
       if (!tl->is_flagged) {
-        defeated = io_on_tile_click(b, tl->get_x(), tl->get_y());
+        defeated = on_tile_click(b, tl->get_x(), tl->get_y());
         tl->is_clicked = true;
         if (defeated) {
           return true;
@@ -204,43 +208,89 @@ bool io_on_middle_click(game_board *b, tile *t) {
   return false;
 }
 
+int level_select() {
+  int in;
+
+  clear();
+  mvprintw(0, 0, "0");
+  mvprintw(23, 0, "0");
+  mvprintw(0, 79, "0");
+  mvprintw(23, 79, "0");
+
+  mvprintw(2, 27, "Please select a difficulty:");
+  mvprintw(6, 36, "1: easy");
+  mvprintw(8, 36, "2: medium");
+  mvprintw(10, 36, "3: hard");
+
+  do {
+    in = getch() - '0';
+  } while (in != 1 && in != 2 && in != 3);
+
+  switch (in) {
+    case 1:
+      return EASY;
+    case 2: 
+      return MEDIUM;
+    case 3:
+      return HARD;
+    default:
+      return 200;
+  }
+}
+
 void game_loop() {
     int in;
+    int num_bombs;
     MEVENT event;
     game_board *board;
     bool defeated = false;
     bool generated = false;
 
+    clear();
+
+    num_bombs = level_select();
+
+    grid_init();
+
     do {
     in = getch();
     if (getmouse(&event) == OK && in_bounds(x(event.x), y(event.y))) {
       if (!generated) {
-        board = new game_board(35, x(event.x), y(event.y));
+        board = new game_board(num_bombs, x(event.x), y(event.y));
         generated = true;
       }
 
       if (event.bstate & BUTTON1_CLICKED) {
-        defeated = io_on_tile_click(board, x(event.x), y(event.y));
+        defeated = on_tile_click(board, x(event.x), y(event.y));
       }
       else if (event.bstate & BUTTON2_CLICKED) {
-        defeated = io_on_middle_click(board, board->board[y(event.y)][x(event.x)]);
+        defeated = on_middle_click(board, board->board[y(event.y)][x(event.x)]);
       }
       else if (event.bstate & BUTTON3_CLICKED) {
-        io_on_tile_flag(board, board->board[y(event.y)][x(event.x)]);
+        on_tile_flag(board, board->board[y(event.y)][x(event.x)]);
       }
     }
     
     
   } while (!defeated && in != 'Q' && !board->have_won());
 
-  io_show_grid(board);
-    mvprintw(26, 0, "%s", board->have_won() ? (char *)"yay you won" : (char *)"you lost :(");
-    getch();
+  if (board->have_won()) {
+    mvprintw(26, 0, "yay you won (click anywhere to continue)");
+  }
+  else {
+    mvprintw(26, 0, "you lost (click anywhere to continue)");
+  }
+  show_grid(board);
+  
+  getch();
 }
 
 void title_screen() {
     int in;
     MEVENT event;
+
+    clear();
+
     mvprintw(0, 0, "0");
     mvprintw(23, 0, "0");
     mvprintw(0, 79, "0");
@@ -261,20 +311,27 @@ void title_screen() {
 
 int main(int argc, char const *argv[])
 {
+    int in;
 
-   // game_board *board = NULL;
-
-    io_init_terminal();
+    init_terminal();
 
     title_screen();
 
-    //board = new game_board(20);
-    io_grid_init();
-    
-    game_loop();
+    do {
+      game_loop();
 
-    
+      clear();
 
-    io_reset_terminal();
+      mvprintw(2, 26, "Would you like to play again?");
+      mvprintw(6, 38, "1: yes");
+      mvprintw(8, 38, "2: no");
+
+      do {
+        in = getch() - '0';
+      } while (in != 1 && in != 2);
+
+    } while (in == 1);
+    
+    reset_terminal();
     return 0;
 }

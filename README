@@ -1,0 +1,10 @@
+This code is a clone of the classic computer game Minesweeper. The game is a 24x12 grid, some of which are hiding bombs.
+
+Non-bomb tiles will show the number of bombs in the 8 tiles surrounding it. Left click a tile to reveal it. Right click a tile to flag it as a bomb. If a tile has the correct number of flags surrounding it, you can middle click it reveal its remaining neighboring tiles.
+
+The game is won when all bombs are flagged, and is lost when a bomb is left clicked.
+
+There are three modes, the difficulty of which is determined by how many bombs are in the grid. Easy mode has 20 bombs, medium has 30
+bombs, and hard has 50 bombs.
+
+by alix noble, spring 2023 for com s 327 at iowa state
