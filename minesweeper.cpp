@@ -208,6 +208,38 @@ bool on_middle_click(game_board *b, tile *t) {
   return false;
 }
 
+void highlight_unclicked_neighbors(game_board *b, tile *t) {
+  std::vector<tile *> v;
+
+  /* if (t->is_clicked && t->get_value() == b->check_tile_neighbors_flags(t->get_x(), t->get_y())) { */
+    v = b->get_tile_neighbors(t->get_x(), t->get_y());
+    
+    for (tile *tl : v) {
+      if (!tl->is_flagged && !tl->is_clicked) {
+        tl->is_highlighted = true;
+        attron(COLOR_PAIR(COLOR_YELLOW));
+        mvaddch(io_y(tl->get_y()), io_x(tl->get_x()), '.');
+        attroff(COLOR_PAIR(COLOR_YELLOW));
+      }
+    }
+  //}
+}
+
+void unhighlight(game_board *b) {
+  int x, y;
+
+  for (y = 0; y < BOARD_Y; y++) {
+    for (x = 0; x < BOARD_X; x++) {
+      if (b->board[y][x]->is_highlighted && !b->board[y][x]->is_clicked) {
+        b->board[y][x]->is_highlighted = false;
+        attron(COLOR_PAIR(COLOR_CYAN));
+        mvaddch(io_y(b->board[y][x]->get_y()), io_x(b->board[y][x]->get_x()), '.');
+        attroff(COLOR_PAIR(COLOR_CYAN));
+      }
+    }
+  }
+}
+
 int level_select() {
   int in;
 
@@ -263,8 +295,18 @@ void game_loop() {
       if (event.bstate & BUTTON1_CLICKED) {
         defeated = on_tile_click(board, x(event.x), y(event.y));
       }
-      else if (event.bstate & BUTTON2_CLICKED) {
+      else if (event.bstate & BUTTON2_PRESSED) {
+        highlight_unclicked_neighbors(board, board->board[y(event.y)][x(event.x)]);
+      }
+      else if ((event.bstate & BUTTON2_RELEASED) || (event.bstate & BUTTON2_CLICKED)) {
         defeated = on_middle_click(board, board->board[y(event.y)][x(event.x)]);
+
+        if (event.bstate & BUTTON2_RELEASED) {
+          //unhighlight things (doesn't need to be done if press and release were in same place,
+          //but if press->drag->release, then it needs to be done)
+          //maybe add vector to board of highlighted tiles? or bool is_highlighted on tiles?
+          unhighlight(board);
+        }
       }
       else if (event.bstate & BUTTON3_CLICKED) {
         on_tile_flag(board, board->board[y(event.y)][x(event.x)]);
@@ -301,7 +343,9 @@ void title_screen() {
     mvprintw(5, 6, " | |\\/| | | | | .` || _| \\__ \\ \\ \\/\\/ / | _| | _| |  _/| _| |   /");
     mvprintw(6, 6, " |_|  |_||___||_|\\_||___||___/  \\_/\\_/  |___||___||_|  |___||_|_\\");
 
+    attron(A_BOLD);
     mvprintw(15, 34, "by alix noble");
+    attroff(A_BOLD);
     mvprintw(17, 27, "--click anywhere to start--");
 
     do {

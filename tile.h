@@ -18,7 +18,8 @@ private:
 public:
     bool is_clicked;
     bool is_flagged;
-    tile(bool is_bomb, int value, int x, int y) : is_bomb(is_bomb), value(value), x(x), y(y), is_clicked(false), is_flagged(false) {}
+    bool is_highlighted;
+    tile(bool is_bomb, int value, int x, int y) : is_bomb(is_bomb), value(value), x(x), y(y), is_clicked(false), is_flagged(false), is_highlighted(false) {}
     bool check_if_bomb() { return is_bomb; }
     int get_value() { return value; }
     int get_x() { return x; }

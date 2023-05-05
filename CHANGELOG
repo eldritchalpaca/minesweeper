@@ -18,3 +18,5 @@
 05/01/23    02:37PM     first click will now never be a bomb
 
             08:16PM     difficulty selection, option to play another game after one is finished
+
+05/05/23    02:23PM     when a tile is middle clicked and held, all surrounding unclicked tiles are highlighted
